@@ -199,7 +199,7 @@ public class TransactionsService extends BaseService {
         //  Update Category goals and Saving Goals
         if (goalCategories != null) {
             try {
-                double savedAmount = transactionDetailsDto.getPaymentAmount() - allItemAmount.get();
+                double savedAmount = allItemAmount.get() - transactionDetailsDto.getPaymentAmount();
 
                 goalCategories.setSavedAmount(goalCategories.getSavedAmount() + savedAmount);
                 goalCategories.getGoalId().setCurrentBalance(goalCategories.getGoalId().getCurrentBalance() + savedAmount);
