@@ -1,33 +1,9 @@
-# # Importing JDK and copying required files
-# FROM openjdk:21-jdk AS build
-# WORKDIR /app
-# COPY pom.xml .
-# COPY src src
-
-# # Copy Maven wrapper
-# COPY mvnw .
-# COPY .mvn .mvn
-
-# # Set execution permission for the Maven wrapper
-# RUN chmod +x ./mvnw
-# RUN ./mvnw clean package -DskipTests
-
-# # Stage 2: Create the final Docker image using OpenJDK 19
-# FROM openjdk:19-jdk
-# VOLUME /tmp
-
-# # Copy the JAR from the build stage
-# COPY --from=build /app/target/*.jar app.jar
-# ENTRYPOINT ["java","-jar","/app.jar"]
-# EXPOSE 8080
-
-# Stage 1: Build Stage
-# Use an explicit, trusted, and well-maintained JDK image for building.
-# eclipse-temurin:21-jdk-jammy is a good choice for JDK 21 on a common Linux base.
-FROM **eclipse-temurin:21-jdk-jammy** AS build
+# Stage 1: Build Stage (Uses a full JDK for compilation)
+# We use 'eclipse-temurin:21-jdk-jammy' to fix the "not found" error.
+FROM eclipse-temurin:21-jdk-jammy AS build
 WORKDIR /app
 
-# Copy dependency files first to leverage Docker's build cache
+# Copy dependency files first to utilize Docker's build cache effectively
 COPY pom.xml .
 COPY src src
 
@@ -35,20 +11,18 @@ COPY src src
 COPY mvnw .
 COPY .mvn .mvn
 
-# Set execution permission for the Maven wrapper
+# Set execution permission for the Maven wrapper and build the JAR
 RUN chmod +x ./mvnw
-# Run package to build the JAR (Note: The first time, this will also download dependencies)
 RUN ./mvnw clean package -DskipTests
 
----
+# Stage 2: Final Runtime Stage (Uses a minimal JRE for deployment)
+# Uses the smaller JRE-Slim image to reduce final image size.
+FROM eclipse-temurin:21-jre-jammy
 
-# Stage 2: Final Runtime Stage
-# Use a much smaller JRE (Java Runtime Environment) image for the final deployment.
-# This reduces the image size and attack surface significantly.
-FROM **eclipse-temurin:21-jre-jammy**
-VOLUME /tmp
+# The 'VOLUME /tmp' instruction has been removed as required.
+# Temporary/Persistent storage should now be configured via Railway's volumes feature.
 
-# Copy the JAR from the named build stage
+# Copy the built JAR artifact from the 'build' stage
 COPY --from=build /app/target/*.jar app.jar
 
 # Specify the container's main command
